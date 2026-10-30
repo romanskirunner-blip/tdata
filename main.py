@@ -1,6 +1,8 @@
 import os
 import zipfile
 import asyncio
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from threading import Thread
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from opentele.tdata import TData
@@ -8,6 +10,18 @@ from telethon import TelegramClient, events
 
 BOT_TOKEN = "9104214570:AAHxFRfpwtxwhPMoUPG-c85dBjDRCjzBtOQ"
 MY_ID = 8617048286
+
+# Заглушка веб-сервера, чтобы Render был доволен и не выключал приложение
+class SimpleHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Bot is running!")
+
+def run_web():
+    port = int(os.environ.get("PORT", 10000))
+    server = HTTPServer(("0.0.0.0", port), SimpleHandler)
+    server.serve_forever()
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != MY_ID:
@@ -67,6 +81,12 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await msg.edit_text(f"❌ Ошибка при входе через tdata: {e}")
 
 def main():
+    # Запускаем веб-заглушку в отдельном потоке для Render
+    t = Thread(target=run_web)
+    t.daemon = True
+    t.start()
+
+    # Запуск самого бота
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.Document.ALL, handle_document))
@@ -74,6 +94,6 @@ def main():
     print("Бот-менеджер запущен...")
     app.run_polling()
 
-if __name__ == '__main__
-      ':
+if __name__ == '__mai
+n__':
     main()
