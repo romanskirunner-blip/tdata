@@ -11,7 +11,6 @@ from telethon import TelegramClient, events
 BOT_TOKEN = "9104214570:AAHxFRfpwtxwhPMoUPG-c85dBjDRCjzBtOQ"
 MY_ID = 8617048286
 
-# Заглушка веб-сервера, чтобы Render был доволен и не выключал приложение
 class SimpleHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -81,12 +80,10 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await msg.edit_text(f"❌ Ошибка при входе через tdata: {e}")
 
 def main():
-    # Запускаем веб-заглушку в отдельном потоке для Render
     t = Thread(target=run_web)
     t.daemon = True
     t.start()
 
-    # Запуск самого бота
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.Document.ALL, handle_document))
