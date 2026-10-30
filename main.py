@@ -1,26 +1,29 @@
 import os
 import zipfile
 import asyncio
-from http.server import HTTPServer, BaseHTTPRequestHandler
-from threading import Thread
+from flask import Flask, request
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from opentele.tdata import TData
-from telethon import TelegramClient, events
+from telethon import events
 
 BOT_TOKEN = "9104214570:AAHxFRfpwtxwhPMoUPG-c85dBjDRCjzBtOQ"
 MY_ID = 8617048286
 
-class SimpleHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(b"Bot is running!")
+app_flask = Flask(__name__)
+application = None
+loop = None
 
-def run_web():
-    port = int(os.environ.get("PORT", 10000))
-    server = HTTPServer(("0.0.0.0", port), SimpleHandler)
-    server.serve_forever()
+@app_flask.route(f'/{BOT_TOKEN}', methods=['POST'])
+def webhook():
+    if application and loop:
+        update = Update.de_json(request.get_json(force=True), application.bot)
+        asyncio.run_coroutine_threadsafe(application.process_update(update), loop)
+    return 'OK'
+
+@app_flask.route('/')
+def index():
+    return 'Bot is running!'
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != MY_ID:
@@ -79,18 +82,30 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await msg.edit_text(f"❌ Ошибка при входе через tdata: {e}")
 
-def main():
-    t = Thread(target=run_web)
-    t.daemon = True
-    t.start()
-
-    app = Application.builder().token(BOT_TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.Document.ALL, handle_document))
+async def setup_bot():
+    global application, loop
+    loop = asyncio.get_running_loop()
     
-    print("Бот-менеджер запущен...")
-    app.run_polling()
+    application = Application.builder().token(BOT_TOKEN).build()
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(MessageHandler(filters.Document.ALL, handle_document))
+    
+    await application.initialize()
+    
+    # Устанавливаем вебхук на твой адрес Render
+    render_url = os.environ.get("RENDER_EXTERNAL_URL")
+    if render_url:
+        webhook_url = f"{render_url}/{BOT_TOKEN}"
+        await application.bot.set_webhook(webhook_url)
+        print(f"Вебхук установлен: {webhook_url}")
 
-if __name__ == '__mai
-n__':
-    main()
+    await application.start()
+
+if __name__ == '__main__':
+    loop_main = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop_main)
+    loop_main.run_until_complete(setup_bot())
+    
+    port = int(os.environ.get("PORT", 10000))
+    app_flask.run(host="0.0
+    .0.0", port=port)
