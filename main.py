@@ -41,6 +41,19 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
             break
 
     try:
+        # Проверяем, есть ли файлы tdata в папке перед вызовом opentele
+        if not os.path.exists(os.path.join(tdata_folder, "key_datas")) and not any("key_datas" in f for f in os.listdir(tdata_folder) if os.path.isfile(os.path.join(tdata_folder, f))):
+            # Попробуем поискать глубже
+            found = False
+            for r, d, fs in os.walk(extract_dir):
+                if any("key_datas" in f for f in fs):
+                    tdata_folder = r
+                    found = True
+                    break
+            if not found:
+                await msg.edit_text("❌ Ошибка: В архиве не найдены файлы tdata (нет key_datas). Проверь структуру архива!")
+                return
+
         td = TData(tdata_folder)
         client = await td.ToTelethon()
         await client.connect()
@@ -61,5 +74,5 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
 app = Application.builder().token(BOT_TOKEN).build()
 app.add_handler(CommandHandler("start", start))
 app.add_handler(MessageHandler(filters.Document.ALL, handle_document))
-app.r
-un_polling()
+app.
+run_polling()
